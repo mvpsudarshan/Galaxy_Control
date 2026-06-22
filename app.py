@@ -1,35 +1,33 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import cv2
-import mediapipe as mp
 import numpy as np
 import math
 
-# Direct import for maximum stability
-from mediapipe.python.solutions.hands import Hands
-
-# Initialize MediaPipe
-hands = Hands(
-    static_image_mode=False,
-    max_num_hands=1,
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.7
-)
-
-# Session State
+# Session State for persistence
 if 'active' not in st.session_state: st.session_state.active = True
 if 'direction' not in st.session_state: st.session_state.direction = 1
 
 class GalaxyTransformer(VideoTransformerBase):
+    def __init__(self):
+        import mediapipe as mp
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=1,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.7
+        )
+
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
         img = cv2.flip(img, 1)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = hands.process(img_rgb)
+        results = self.hands.process(img_rgb)
         
         if results.multi_hand_landmarks:
             hand = results.multi_hand_landmarks[0].landmark
-            thumb, index, mid, ring, pinky = hand[4], hand[8], hand[12], hand[16], hand[20]
+            thumb, index, pinky = hand[4], hand[8], hand[20]
             
             # Gesture Logic
             is_curled = all(math.hypot(hand[i].x - hand[0].x, hand[i].y - hand[0].y) < 0.15 for i in [12, 16, 20])
@@ -49,4 +47,4 @@ class GalaxyTransformer(VideoTransformerBase):
 
 st.title("Galaxy Control Interface")
 webrtc_streamer(key="galaxy", video_transformer_factory=GalaxyTransformer)
-st.write("Grant camera access. Pinch to toggle, Fist to change direction.")
+st.write("Grant camera access to start.")
