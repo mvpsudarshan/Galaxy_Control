@@ -5,9 +5,11 @@ import mediapipe as mp
 import numpy as np
 import math
 
+# Direct import for maximum stability
+from mediapipe.python.solutions.hands import Hands
+
 # Initialize MediaPipe
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(
+hands = Hands(
     static_image_mode=False,
     max_num_hands=1,
     min_detection_confidence=0.7,
