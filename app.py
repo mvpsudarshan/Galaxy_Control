@@ -7,12 +7,16 @@ import math
 
 # Initialize MediaPipe
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(
+    static_image_mode=False,
+    max_num_hands=1,
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.7
+)
 
-# Session State for persistence
+# Session State
 if 'active' not in st.session_state: st.session_state.active = True
 if 'direction' not in st.session_state: st.session_state.direction = 1
-if 'paused' not in st.session_state: st.session_state.paused = False
 
 class GalaxyTransformer(VideoTransformerBase):
     def transform(self, frame):
@@ -30,18 +34,17 @@ class GalaxyTransformer(VideoTransformerBase):
             dist_thumb_index = math.hypot(thumb.x - index.x, thumb.y - index.y)
             
             # Master Toggle
-            if is_curled and dist_thumb_index > 0.15: st.session_state.active = not st.session_state.active
-            # Play/Pause
-            elif dist_thumb_index < 0.08: st.session_state.paused = not st.session_state.paused
+            if is_curled and dist_thumb_index > 0.15: 
+                st.session_state.active = not st.session_state.active
             # Change Direction
-            elif math.hypot(thumb.x - pinky.x, thumb.y - pinky.y) < 0.08: st.session_state.direction *= -1
+            elif math.hypot(thumb.x - pinky.x, thumb.y - pinky.y) < 0.08: 
+                st.session_state.direction *= -1
 
         # HUD Aesthetics
-        h, w, _ = img.shape
         cv2.putText(img, f"PARTICLES: {'ACTIVE' if st.session_state.active else 'ABSENT'}", (20, 40), 1, 1.5, (0, 255, 0), 2)
         cv2.putText(img, f"DIR: {'CW' if st.session_state.direction==1 else 'CCW'}", (20, 80), 1, 1.5, (255, 255, 0), 2)
         return img
 
 st.title("Galaxy Control Interface")
 webrtc_streamer(key="galaxy", video_transformer_factory=GalaxyTransformer)
-st.write("Ensure your camera is enabled. Use gestures to interact.")
+st.write("Grant camera access. Pinch to toggle, Fist to change direction.")
